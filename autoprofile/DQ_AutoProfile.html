@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<!-- Global javascript's for handling the form (MIT License / GitHub) -->
+		<script src="../core/js/FontAwsome-all.min.js"></script>
+		<script src="../core/js/jquery-3.2.1.min.js"></script>
+		<script src="../core/js/jquery-ui.min.js"></script>
+		<script src="../core/js/jquery.validate.min.js"></script>
+		<script src="../core/js/bootstrap-4.1.1.min.js"></script>
+		<script src="../core/js/popper.min.js"></script>
+		<script src="../core/js/bootbox.all.min.js"></script>
+		<!-- Global Style Sheets MIT (License / GitHub) -->
+		<link 	href="./core/css/bootstrap-4.1.1.min.css" rel="stylesheet" id="bootstrap-css">
+		<link 	href="./core/css/animate-3.5.1.min.css" rel="stylesheet" id="Animate-css">
+		
+		<!-- Style Sheets specific for this form -->
+		<link href="./css/TableCtrl.css" rel="stylesheet" id="tablectrl-css">
+		<!-- javascript handling the Actions on the Form -->
+		<script src="./js/TableCtrl-min.js"></script>
+<!-- ========================================================================================================== -->		
+<!-- The code below is only for launching the Auto Profiling process, all form management is on TableCtrl-min.js -->
+<!-- ========================================================================================================== -->				
+		<script>
+/*======================================================================*/
+/* Passing JSON to the SAS Job Execution 								*/
+/*======================================================================*/
+	function SubmitForm2SASJobExec(in_json, timeout) 
+	{
+	 var formData = new FormData();
+	 var xhrstate = -1;
+	 var DlgWait;
+
+		DlgWait = bootbox.dialog({
+					message: '<p class="alert alert-light text-center mb-0"><i class="fa fa-spin fa-cog"></i> Profiling... Please wait ...</p>',
+					show: true,
+					//centerVertical: true,
+					onEscape: true,
+					backdrop: false,
+					closeButton: false
+				});
+		DlgWait.init(function(){
+			setTimeout(function(){
+				//DlgWait.modal('show');
+			}, timeout);
+		});
+		
+		// the JSON object here
+		var json = in_json;
+		//alert (json);
+	
+		// Create the input parameter for the JSON data
+		// the variable name (myjson) MUST exist as a parameter on Job definition 
+		// and as global variable on the SAS program that processes the job tasks
+		formData.append("myjson", json); 
+		
+		// Create other input parameters for the job execution
+		//formData.append("_program", "/Public/SAS_DQ_AUTOPROF/JobExec/DQ_AutoProfile");
+		
+		// in Viya 3.5 if embedded on the Job Code should be formData.append("_program", "$PROGRAM$")
+		formData.append("_program", "$PROGRAM$");
+		formData.append("_action", "execute");
+		formData.append("_timeout", "1200000");
+		//formData.append("_debug", "log");
+		formData.append("_csrf" , "$CSRF$"); // <= MANDATORY !!
+
+		// Create the request object
+		var request = new XMLHttpRequest();
+		//request.timeout = timeout;
+		
+		request.addEventListener("error", function(event) 
+		{
+			xhrstate = "error";
+			alert("Something went wrong.");
+			DlgWait.modal('hide');
+			document.getElementById("waiting").style.display='none';
+			return (false);
+		});
+		request.addEventListener("loadstart", function(event) 
+		{
+			xhrstate = "loadstart";
+			document.getElementById("waiting").style.display='block';
+			return (true);
+		});
+		request.addEventListener("loadend", function(event) 
+		{
+			if(xhrstate != "error")
+			{
+				DlgWait.modal('hide');
+				document.getElementById("waiting").style.display='none';
+				bootbox.alert({
+					message: "Profiling Done!",
+					centerVertical: true,
+					size: 'small'
+				});
+				return (true);
+			}
+			return(false);
+		});
+		
+		request.onreadystatechange = function() {
+			if (this.readyState == 4) 
+			{ // done
+				xhrstate = "done";
+				DlgWait.modal('hide');
+				document.getElementById("waiting").style.display='none';
+				// Display the results in the DIV
+				if (this.status == 200){
+					document.getElementById("JobResults").innerHTML = "XHR Response: " + this.responseText;
+					return(true);
+				}else {
+					document.getElementById("JobResults").innerHTML = "XHR Status: " + this.status;
+					return(false);
+				}
+			}
+		};
+
+		// Submit the form
+		// when this JS being embedded on the HTML
+		request.open("post", "/SASJobExecution/");
+
+		// when this JS being as imported onto the HTML
+		request.send(formData);
+		
+		// Display a temporary message in the DIV
+		document.getElementById("waiting").style.display='block';
+		document.getElementById("JobResults").innerHTML = "Profiling... Please wait ...";
+		return (true);		
+	}; // eof SubmitForm2SASJobExec(in_json)
+
+		</script>
+<!-- ========================================================================================================== -->		
+<!-- The code above is only for launching the Auto Profiing process, all form management is on TableCtrl-min.js --> 	
+<!-- ========================================================================================================== -->		
+	
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Data Profiling Jobs</title>
+	</head>
+	<body role="main">
+		<div id="main" class="container">
+			<!-- Form Name -->
+			<legend class="alert alert-primary text-center" role="alert">
+				Data Profiling Jobs
+			</legend>
+			<form id="GetParamsForm" method="post" class="form-horizontal" action="">
+				<div class="row clearfix">
+					<div class="col-md-12 table-responsive">
+						<table class="table table-bordered table-hover" id="tab_logic">
+							<thead  bgcolor="#b8daff"> <!--#F2F2F2 #E6E6E6-->
+								<tr>
+									<th class="text-center">Rawdata - CasLib</th>
+									<th class="text-center">Rawdata - Table</th>
+									<th class="text-center">Profile - Description</th>
+									<th class="text-center">Append to?</th>
+									<th class="text-center">Save to Disk?</th>
+									
+									<th class="text-center" ></th> <!--style="border-top: 1px solid #ffffff; border-right: 1px solid #ffffff;"></th> -->
+								</tr>
+							</thead>
+							<tbody>
+								<tr id='addr0' data-id="0" >
+									<td data-name="tb_rawdta_lib">
+										<input type="text" id='in_rawdta_lib'  name='in_rawdta_lib' placeholder='Cas Library' class="form-control"/>
+									</td>
+									<td data-name="tb_rawdta_table">
+										<input type="text" id='in_rawdta_table' name='in_rawdta_table' placeholder='Raw Data Table Name' class="form-control"/>
+									</td>
+									<td data-name="tb_prf_table_desc">
+										<textarea id="in_prf_table_desc" name="in_prf_table_desc" placeholder="Profile Description" class="form-control" ></textarea>
+									</td>
+									<td data-name="tb_append_master">
+										<select id="do_append_master" name="do_append_master" class="form-control">
+											<option value="">Select...</option>
+											<option value="YES">Yes</option>
+											<option value="NO">No</option>
+										</select>
+									</td>
+									<td data-name="tb_save2disk">
+										<select id="do_save2disk" name="do_save2disk" class="form-control">
+											<option value="">Select...</option>
+											<option value="YES">Yes</option>
+											<option value="NO">No</option>
+										</select>
+									</td>
+										
+									<td data-name="del_row"> 
+										<button name="del0" class='btn btn-danger glyphicon glyphicon-remove row-remove'>
+											<span aria-hidden="true">X</span>
+										</button>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<a id="add_row" class="btn btn-primary float-right">
+					<font color="white">Add Row</font>
+				</a>
+				<div id="ActionButtons">
+					<label class="col-md-6 control-label" for="button1id"></label>
+					<div id="action_buttons" class="col-md-12">
+						<font color="white">
+							<button type="submit" value="submit" id="btn_submit" name="submit" class="btn btn-success">Submit</button>
+							<button type="reset" value="Reset" id="btn_cancel" name="cancel" class="btn btn-danger" >Quit</button>
+						</font>
+					</div>
+				</div>
+				<div id="JobResults">
+					<label class="col-md-6 control-label"></label>
+				</div>
+				<div id="waiting" class="spinner" aria-label="Please wait..." style="display: none;">
+			  		<div class="bounce1"></div>
+			  		<div class="bounce2"></div>
+			  		<div class="bounce3"></div>
+				</div>
+			</form>
+		</div>
+	</body>
+</html>

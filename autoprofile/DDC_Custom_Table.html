@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link href="../core/css/tabulator_simple.min.css" rel="stylesheet">
+		<link href="../core/css/fontawesome-all.min.css" rel="stylesheet">
+		<script type="text/javascript" src="../core/js/fontawesome-all.min.js"></script>
+		<script type="text/javascript" src="../core/js/jquery-3.3.1.min.js"></script>
+		<script type="text/javascript" src="../core/js/tabulator.min.js"></script>
+		<!-- Specific Libraries -->
+        <script type="module" src="./js/Tabulator4VA_CoreLibs.min.js"></script>
+        <script type="text/javascript" src="./js/DQAutoProfile_Tab4VA-min.js"></script>
+	</head>
+
+	<body>
+		<div class= "tabulator" id="json-table">
+			<div class="loader"><i class="fa fa-spinner fa-pulse fa-fw fa-spin"></i>
+				<div> Loading ...</div>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+			'use strict';
+			window.onload = function ()
+            {
+				// "Global" Variables
+                const tableDivId = "json-table"; // identifier for the table's parent/container
+                let Tabulator4VA = new TabOnVA(tableDivId);
+
+            }; // end window.onload
+            window.onunload = function ()
+            {   console.log("onunload");
+                Tabulator4VA.Exit();
+            };
+		</script>
+
+	</body>
+
+</html>
